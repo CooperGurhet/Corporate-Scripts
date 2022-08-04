@@ -1,4 +1,4 @@
-﻿$departinguser = Read-Host "Enter departing user's email"
+$departinguser = Read-Host "Enter departing user's email"
 $DestinationSite = Read-Host "Enter destination site Name"
 $globaladmin = Read-Host "Enter the username of your Global Admin account"
 $credentials = Get-Credential -Credential $globaladmin
@@ -17,17 +17,18 @@ $DestinationSharepointSite = "https://$($InitialDomain.Name.Split(".")[0]).share
 Write-Host "`nConnecting to SharePoint Online" -ForegroundColor Blue
 Connect-SPOService -Url $SharePointAdminURL -Credential $credentials
   
-Write-Host "`nAdding $globaladmin as site collection admin on both OneDrive site collections" -ForegroundColor Blue
 # Set current admin as a Site Collection Admin on both OneDrive Site Collections
+Write-Host "`nAdding $globaladmin as site collection admin on both OneDrive site collections" -ForegroundColor Blue
 Set-SPOUser -Site $departingOneDriveSite -LoginName $globaladmin -IsSiteCollectionAdmin $true
 Set-SPOUser -Site $DestinationSharepointSite -LoginName $globaladmin -IsSiteCollectionAdmin $true
   
-Write-Host "`nConnecting to $departinguser's OneDrive via SharePoint Online PNP module" -ForegroundColor Blue
-  
-Connect-PnPOnline -Url $departingOneDriveSite -Credentials $credentials
-  
-Write-Host "`nGetting display name of $departinguser" -ForegroundColor Blue
+Write-Host "`nConnecting to SharePoint Online PNP module" -ForegroundColor Blue
+
+$ConnectionSite = Connect-PnPOnline -url $DestinationSharepointSite -Credentials $credentials -ReturnConnection
+$ConnectionDrive = Connect-PnPOnline -url $departingOneDriveSite -Credentials $Credentials
+
 # Get name of departing user to create folder name.
+Write-Host "`nGetting display name of $departinguser" -ForegroundColor Blue
 $departingOwner = Get-PnPSiteCollectionAdmin | Where-Object {$_.loginname -match $departinguser}
   
 # If there's an issue retrieving the departing user's display name, set this one.
@@ -36,16 +37,18 @@ if ($departingOwner -contains $null) {
         Title = "Departing User"
     }
 }
-  
+
 # Define relative folder locations for OneDrive source and destination
 $departingOneDrivePath = "/personal/$departingUserUnderscore/Documents"
 $destinationSitePath = "/sites/$DestinationSiteFormatted/shared Documents/$($departingOwner.Title)'s Files"
 $DestinationSharepointSiteRelativePath = "shared Documents/$($departingOwner.Title)'s Files"
-  
-Write-Host "`nGetting all items from $($departingOwner.Title)" -ForegroundColor Blue
+
 # Get all items from source OneDrive
-$items = Get-PnPListItem -List Documents -PageSize 1000
-  
+Write-Host "`nGetting all items from $($departingOwner.Title)" -ForegroundColor Blue
+$items = Get-PnPListItem -List Documents -PageSize 1000 -Connection $ConnectionDrive
+
+
+
 $largeItems = $items | Where-Object {[long]$_.fieldvalues.SMTotalFileStreamSize -ge 261095424 -and $_.FileSystemObjectType -contains "File"}
 if ($largeItems) {
     $largeexport = @()
@@ -58,29 +61,32 @@ if ($largeItems) {
 }
   
 $rightSizeItems = $items | Where-Object {[long]$_.fieldvalues.SMTotalFileStreamSize -lt 261095424 -or $_.FileSystemObjectType -contains "Folder"}
-  
-Write-Host "`nConnecting to $DestinationSite via SharePoint PNP PowerShell module" -ForegroundColor Blue
-Connect-PnPOnline -Url $DestinationSharepointSite -Credentials $credentials
-  
-Write-Host "`nFilter by folders" -ForegroundColor Blue
+
 # Filter by Folders to create directory structure
+Write-Host "`nFilter by folders" -ForegroundColor Blue
 $folders = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "Folder"}
   
 Write-Host "`nCreating Directory Structure" -ForegroundColor Blue
 foreach ($folder in $folders) {
     $path = ('{0}{1}' -f $DestinationSharepointSiteRelativePath, $folder.fieldvalues.FileRef) -Replace $departingOneDrivePath
     Write-Host "Creating folder in $path" -ForegroundColor Green
-    $newfolder = Resolve-PnPFolder -SiteRelativePath $path
+    $newfolder = Resolve-PnPFolder -SiteRelativePath $path -Connection $ConnectionSite
 }
-  
+
+
+$LocalPath = "c:\temp"  
+
 Write-Host "`nCopying Files" -ForegroundColor Blue
 $files = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "File"}
 $fileerrors = ""
 foreach ($file in $files) {
+    $name = $file.fieldvalues.FileLeafRef.tostring()   
     $destpath = ("$destinationSitePath$($file.fieldvalues.FileDirRef)") -Replace $departingOneDrivePath
+    $path = $file.fieldvalues.FileRef
     Write-Host "Copying $($file.fieldvalues.FileLeafRef) to $destpath" -ForegroundColor Green
-    $newfile = Copy-PnPFile -SourceUrl $file.fieldvalues.FileRef -TargetUrl $destpath -OverwriteIfAlreadyExists -Force -ErrorVariable errors -ErrorAction SilentlyContinue
-    $fileerrors += $errors
+    Get-PnPFile -Url $path -Path $LocalPath -Filename $name -AsFile -force -Connection $ConnectionDrive
+    $newfile = Add-PnPFile -Path "$LocalPath\$name" -folder $destpath -Connection $Connectionsite
+    Remove-Item -Path "$localPath\$name" -Force
 }
 $fileerrors | Out-File c:\temp\fileerrors.txt
   
