@@ -15,21 +15,21 @@ $DestinationSiteFormatted = $DestinationSite -replace "[^a-zA-Z]", ""
 $departingOneDriveSite = "https://$($InitialDomain.Name.Split(".")[0])-my.sharepoint.com/personal/$departingUserUnderscore"
 $DestinationSharepointSite = "https://$($InitialDomain.Name.Split(".")[0]).sharepoint.com/sites/$DestinationSiteFormatted"
 
-Write-Host "`nConnecting to SharePoint Online" -ForegroundColor Blue
+Write-Host "`nConnecting to SharePoint Online" -ForegroundColor Green
 Connect-SPOService -Url $SharePointAdminURL -Credential $credentials
   
 # Set current admin as a Site Collection Admin on both OneDrive Site Collections
-Write-Host "`nAdding $globaladmin as site collection admin on both OneDrive site collections" -ForegroundColor Blue
+Write-Host "`nAdding $globaladmin as site collection admin on both OneDrive site collections" -ForegroundColor Green
 Set-SPOUser -Site $departingOneDriveSite -LoginName $globaladmin -IsSiteCollectionAdmin $true
 Set-SPOUser -Site $DestinationSharepointSite -LoginName $globaladmin -IsSiteCollectionAdmin $true
   
-Write-Host "`nConnecting to SharePoint Online PNP module" -ForegroundColor Blue
+Write-Host "`nConnecting to SharePoint Online PNP module" -ForegroundColor Green
 
 $ConnectionSite = Connect-PnPOnline -url $DestinationSharepointSite -Credentials $credentials -ReturnConnection
 $ConnectionDrive = Connect-PnPOnline -url $departingOneDriveSite -Credentials $Credentials
 
 # Get name of departing user to create folder name.
-Write-Host "`nGetting display name of $departinguser" -ForegroundColor Blue
+Write-Host "`nGetting display name of $departinguser" -ForegroundColor Green
 $departingOwner = Get-PnPSiteCollectionAdmin | Where-Object {$_.loginname -match $departinguser}
   
 # If there's an issue retrieving the departing user's display name, set this one.
@@ -45,7 +45,7 @@ $destinationSitePath = "/sites/$DestinationSiteFormatted/shared Documents/$($dep
 $DestinationSharepointSiteRelativePath = "shared Documents/$($departingOwner.Title)'s Files"
 
 # Get all items from source OneDrive
-Write-Host "`nGetting all items from $($departingOwner.Title)" -ForegroundColor Blue
+Write-Host "`nGetting all items from $($departingOwner.Title)" -ForegroundColor Green
 $items = Get-PnPListItem -List Documents -PageSize 1000 -Connection $ConnectionDrive
 
 
@@ -64,11 +64,11 @@ if ($largeItems) {
 $rightSizeItems = $items | Where-Object {[long]$_.fieldvalues.SMTotalFileStreamSize -lt 261095424 -or $_.FileSystemObjectType -contains "Folder"}
 
 # Filter by Folders to create directory structure
-Write-Host "`nFilter by folders" -ForegroundColor Blue
+Write-Host "`nFilter by folders" -ForegroundColor Green
 $folders = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "Folder"}
 $i = 0
 $total = $folders.Count
-Write-Host "`nCreating Directory Structure" -ForegroundColor Blue
+Write-Host "`nCreating Directory Structure" -ForegroundColor Green
 foreach ($folder in $folders) {
     $path = ('{0}{1}' -f $DestinationSharepointSiteRelativePath, $folder.fieldvalues.FileRef) -Replace $departingOneDrivePath
     $i++
@@ -77,7 +77,7 @@ foreach ($folder in $folders) {
     $newfolder = Resolve-PnPFolder -SiteRelativePath $path -Connection $ConnectionSite
 }
 
-Write-Host "`nCopying Files" -ForegroundColor Blue
+Write-Host "`nCopying Files" -ForegroundColor Green
 $LocalPath = "c:\temp"  
 $files = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "File"}
 $fileerrors = ""
@@ -97,7 +97,7 @@ foreach ($file in $files) {
 $fileerrors | Out-File c:\temp\fileerrors.txt
   
 # Remove Global Admin from Site Collection Admin role for both users
-Write-Host "`nRemoving $globaladmin from OneDrive site collections" -ForegroundColor Blue
+Write-Host "`nRemoving $globaladmin from OneDrive site collections" -ForegroundColor Green
 Set-SPOUser -Site $departingOneDriveSite -LoginName $globaladmin -IsSiteCollectionAdmin $false
 Set-SPOUser -Site $DestinationSharepointSite -LoginName $globaladmin -IsSiteCollectionAdmin $false
 Write-Host "`nComplete!" -ForegroundColor Green
