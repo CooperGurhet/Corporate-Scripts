@@ -65,25 +65,30 @@ $rightSizeItems = $items | Where-Object {[long]$_.fieldvalues.SMTotalFileStreamS
 # Filter by Folders to create directory structure
 Write-Host "`nFilter by folders" -ForegroundColor Blue
 $folders = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "Folder"}
-  
+$i = 0
+$total = $folders.Count
 Write-Host "`nCreating Directory Structure" -ForegroundColor Blue
 foreach ($folder in $folders) {
     $path = ('{0}{1}' -f $DestinationSharepointSiteRelativePath, $folder.fieldvalues.FileRef) -Replace $departingOneDrivePath
-    Write-Host "Creating folder in $path" -ForegroundColor Green
+    $i++
+    Write-Progress -Activity "Creating Directory Structure" -PercentComplete (($i/$total)*100) -CurrentOperation "Creating folder in $path"
+    #Write-Host "Creating folder in $path" -ForegroundColor Green
     $newfolder = Resolve-PnPFolder -SiteRelativePath $path -Connection $ConnectionSite
 }
 
-
-$LocalPath = "c:\temp"  
-
 Write-Host "`nCopying Files" -ForegroundColor Blue
+$LocalPath = "c:\temp"  
 $files = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "File"}
 $fileerrors = ""
+$i = 0
+$total = $files.Count
 foreach ($file in $files) {
     $name = $file.fieldvalues.FileLeafRef.tostring()   
     $destpath = ("$destinationSitePath$($file.fieldvalues.FileDirRef)") -Replace $departingOneDrivePath
     $path = $file.fieldvalues.FileRef
-    Write-Host "Copying $($file.fieldvalues.FileLeafRef) to $destpath" -ForegroundColor Green
+    $i++
+    Write-Progress -Activity "Creating Directory Structure" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
+    #Write-Host "Copying $($file.fieldvalues.FileLeafRef) to $destpath" -ForegroundColor Green
     Get-PnPFile -Url $path -Path $LocalPath -Filename $name -AsFile -force -Connection $ConnectionDrive
     $newfile = Add-PnPFile -Path "$LocalPath\$name" -folder $destpath -Connection $Connectionsite
     Remove-Item -Path "$localPath\$name" -Force
