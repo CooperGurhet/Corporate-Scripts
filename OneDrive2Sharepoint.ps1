@@ -72,7 +72,7 @@ Write-Host "`nCreating Directory Structure" -ForegroundColor Green
 foreach ($folder in $folders) {
     $path = ('{0}{1}' -f $DestinationSharepointSiteRelativePath, $folder.fieldvalues.FileRef) -Replace $departingOneDrivePath
     $i++
-    Write-Progress -Activity "Creating Directory Structure" -PercentComplete (($i/$total)*100) -CurrentOperation "Creating folder in $path"
+    Write-Progress -Activity "Creating Directory Structure" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Creating folder in $path"
     #Write-Host "Creating folder in $path" -ForegroundColor Green
     $newfolder = Resolve-PnPFolder -SiteRelativePath $path -Connection $ConnectionSite
 }
@@ -88,7 +88,7 @@ foreach ($file in $files) {
     $destpath = ("$destinationSitePath$($file.fieldvalues.FileDirRef)") -Replace $departingOneDrivePath
     $path = $file.fieldvalues.FileRef
     $i++
-    Write-Progress -Activity "Creating Directory Structure" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
+    Write-Progress -Activity "Creating Directory Structure" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
     #Write-Host "Copying $($file.fieldvalues.FileLeafRef) to $destpath" -ForegroundColor Green
     Get-PnPFile -Url $path -Path $LocalPath -Filename $name -AsFile -force -Connection $ConnectionDrive
     $newfile = Add-PnPFile -Path "$LocalPath\$name" -folder $destpath -Connection $Connectionsite
