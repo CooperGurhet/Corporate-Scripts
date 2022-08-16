@@ -1,3 +1,4 @@
+$starttime = Get-Date
 $departinguser = Read-Host "Enter departing user's email"
 $destinationuser = Read-Host "Enter destination user's email"
 $globaladmin = Read-Host "Enter the username of your Global Admin account"
@@ -92,3 +93,6 @@ Write-Host "`nRemoving $globaladmin from OneDrive site collections" -ForegroundC
 Set-SPOUser -Site $departingOneDriveSite -LoginName $globaladmin -IsSiteCollectionAdmin $false
 Set-SPOUser -Site $destinationOneDriveSite -LoginName $globaladmin -IsSiteCollectionAdmin $false
 Write-Host "`nComplete!" -ForegroundColor Green
+$endtime = Get-Date
+Write-Host "started at: $starttime"
+write-host "completed at: $endtime"
