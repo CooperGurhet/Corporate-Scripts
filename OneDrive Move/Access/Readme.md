@@ -11,4 +11,4 @@ To install the dependencies for this script use these two powershell commands in
 
 `Install-Module -Name MSOnline`
 
-`Install-Module -Name "PnP.PowerShell" ` -check if necessary
+` Install-Module ExchangeOnlineManagement `
