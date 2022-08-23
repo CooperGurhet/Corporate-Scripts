@@ -1,15 +1,8 @@
-This script will move all folders and files from a users onedrive to a sharepoint site
+This is a collection of useful scripts for Office365
 
-The script will ask for three inputs:
+This is completely open and free to use
 
-  * The Users email
-  * The site name 
-      * ex. domain.sharepoint/sites/legal --> legal
-  * An Admin account email
-      * A credentials box will pop up asking for the password
-
-To install the dependencies for this script use these two powershell commands in an elevated terminal
-
-`Install-Module -Name MSOnline`
-
-`Install-Module -Name "PnP.PowerShell" `
+# List of scripts:
+- Move Files from OneDrive to Sharepoint Site
+- Move Files from Onedrive to another OneDrive
+- Provide Access to Users OneDrive and Mail to another user
