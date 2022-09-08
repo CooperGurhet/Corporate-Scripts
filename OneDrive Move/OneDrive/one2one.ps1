@@ -68,7 +68,7 @@ $folders = $rightSizeItems | Where-Object {$_.FileSystemObjectType -contains "Fo
 $i = 0
 $total = $folders.Count
 foreach ($folder in $folders) {
-    $path = ('{0}{1}' -f $destinationOneDriveSiteRelativePath, $folder.fieldvalues.FileRef).Replace($departingOneDrivePath, '')
+    $path = ('{0}{1}' -f $destinationOneDriveSiteRelativePath, $folder.fieldvalues.FileRef) -Replace $departingOneDrivePath
     $i++
     Write-Progress -Activity "Creating Directory Structure" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Creating folder in $path"
     $newfolder = Resolve-PnPFolder -SiteRelativePath $path
@@ -80,7 +80,7 @@ $fileerrors = ""
 $i = 0
 $total = $files.Count
 foreach ($file in $files) {
-    $destpath = ("$destinationOneDrivePath$($file.fieldvalues.FileDirRef)").Replace($departingOneDrivePath, "")
+    $destpath = ("$destinationOneDrivePath$($file.fieldvalues.FileDirRef)") -Replace $departingOneDrivePath
     $i++
     Write-Progress -Activity "Creating Files" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
     $newfile = Copy-PnPFile -SourceUrl $file.fieldvalues.FileRef -TargetUrl $destpath -OverwriteIfAlreadyExists -Force -ErrorVariable errors -ErrorAction SilentlyContinue
