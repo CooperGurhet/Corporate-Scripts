@@ -1,6 +1,83 @@
+function Send-HTMLEmail {
+    #Requires -Version 3
+    [CmdletBinding()]
+     Param 
+       ([Parameter(Mandatory=$True,
+                   Position = 0,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   HelpMessage="Please enter the Inputobject")]
+        $InputObject,
+        [Parameter(Mandatory=$True,
+                   Position = 1,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   HelpMessage="Please enter the Subject")]
+        [String]$Subject,    
+        [Parameter(Mandatory=$False,
+                   Position = 2,
+                   HelpMessage="Please enter the To address")]    
+        [String[]]$To = '222c70a6.prometric.onmicrosoft.com@amer.teams.ms',
+        [String]$From = 'Office365.Admin@prometric.com',    
+        [String]$CSS,
+        [String]$SmtpServer ="promailervip.proint.prometric.root"
+       )#End Param
+    
+    if (!$CSS)
+    {
+        $CSS = @"
+            <style type="text/css">
+                table {
+                font-family: Verdana;
+                border-style: dashed;
+                border-width: 1px;
+                border-color: #FF6600;
+                padding: 5px;
+                background-color: #FFFFCC;
+                table-layout: auto;
+                text-align: center;
+                font-size: 8pt;
+                }
+    
+                table th {
+                border-bottom-style: solid;
+                border-bottom-width: 1px;
+                font: bold
+                }
+                table td {
+                border-top-style: solid;
+                border-top-width: 1px;
+                }
+                .style1 {
+                font-family: Courier New, Courier, monospace;
+                font-weight:bold;
+                font-size:small;
+                }
+                </style>
+"@
+    }#End if
+    
+    $HTMLDetails = @{
+        Title = $Subject
+        Head = $CSS
+        }
+        
+    $Splat = @{
+        To         =$To
+        Body       ="$($InputObject | ConvertTo-Html @HTMLDetails)"
+        Subject    =$Subject
+        SmtpServer =$SmtpServer
+        From       =$From
+        BodyAsHtml =$True
+        }
+        Send-MailMessage @Splat -Priority High
+        
+}
 $starttime = Get-Date
 $departinguser = Read-Host "Enter departing user's email"
 $DestinationSite = Read-Host "Enter destination site Name"
+$ScriptEmail = Read-Host "Enter your Email"
+$Requestinguser = Read-Host "Enter Requesting user's email"
 $globaladmin = Read-Host "Enter the username of your Global Admin account"
 $credentials = Get-Credential -Credential $globaladmin
 Connect-MsolService -Credential $credentials
@@ -104,3 +181,4 @@ Write-Host "`nComplete!" -ForegroundColor Green
 $endtime = Get-Date
 Write-Host "started at: $starttime"
 write-host "completed at: $endtime"
+Send-HTMLEmail -To "$($ScriptEmail); $($Requestinguser)" -Subject "$($departinguser)'s One Drive Files have been moved to $($DestinationSharepointSite)"
