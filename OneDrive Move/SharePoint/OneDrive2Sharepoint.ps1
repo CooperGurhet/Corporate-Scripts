@@ -76,6 +76,7 @@ function Send-HTMLEmail {
 $starttime = Get-Date
 $departinguser = Read-Host "Enter departing user's email"
 $DestinationSite = Read-Host "Enter destination site Name"
+$destinationsubsite = Read-host "Enter Destination sub site name"
 $ScriptEmail = Read-Host "Enter your Email"
 $Requestinguser = Read-Host "Enter Requesting user's email"
 $globaladmin = Read-Host "Enter the username of your Global Admin account"
@@ -88,9 +89,10 @@ $SharePointAdminURL = "https://$($InitialDomain.Name.Split(".")[0])-admin.sharep
   
 $departingUserUnderscore = $departinguser -replace "[^a-zA-Z]", "_"
 $DestinationSiteFormatted = $DestinationSite -replace "[^a-zA-Z]", ""
+$DestinationsubSiteFormatted = $DestinationsubSite -replace "[^a-zA-Z]", ""
   
 $departingOneDriveSite = "https://$($InitialDomain.Name.Split(".")[0])-my.sharepoint.com/personal/$departingUserUnderscore"
-$DestinationSharepointSite = "https://$($InitialDomain.Name.Split(".")[0]).sharepoint.com/sites/$DestinationSiteFormatted"
+$DestinationSharepointSite = "https://$($InitialDomain.Name.Split(".")[0]).sharepoint.com/sites/$DestinationSiteFormatted/$Destinationsubsiteformatted"
 
 Write-Host "`nConnecting to SharePoint Online" -ForegroundColor Green
 Connect-SPOService -Url $SharePointAdminURL -Credential $credentials
@@ -118,7 +120,7 @@ if ($departingOwner -contains $null) {
 
 # Define relative folder locations for OneDrive source and destination
 $departingOneDrivePath = "/personal/$departingUserUnderscore/Documents"
-$destinationSitePath = "/sites/$DestinationSiteFormatted/shared Documents/$($departingOwner.Title)'s Files"
+$destinationSitePath = "/sites/$DestinationSiteFormatted/$DestinationsubsiteFormatted/shared Documents/$($departingOwner.Title)'s Files"
 $DestinationSharepointSiteRelativePath = "shared Documents/$($departingOwner.Title)'s Files"
 
 # Get all items from source OneDrive
@@ -165,7 +167,7 @@ foreach ($file in $files) {
     $destpath = ("$destinationSitePath$($file.fieldvalues.FileDirRef)") -Replace $departingOneDrivePath
     $path = $file.fieldvalues.FileRef
     $i++
-    Write-Progress -Activity "Creating Directory Structure" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
+    Write-Progress -Activity "Copying Files" -status "$i/$total" -PercentComplete (($i/$total)*100) -CurrentOperation "Copying $($file.fieldvalues.FileLeafRef) to $destpath"
     #Write-Host "Copying $($file.fieldvalues.FileLeafRef) to $destpath" -ForegroundColor Green
     Get-PnPFile -Url $path -Path $LocalPath -Filename $name -AsFile -force -Connection $ConnectionDrive
     $newfile = Add-PnPFile -Path "$LocalPath\$name" -folder $destpath -Connection $Connectionsite
@@ -181,4 +183,4 @@ Write-Host "`nComplete!" -ForegroundColor Green
 $endtime = Get-Date
 Write-Host "started at: $starttime"
 write-host "completed at: $endtime"
-Send-HTMLEmail -To "$($ScriptEmail); $($Requestinguser)" -Subject "$($departinguser)'s One Drive Files have been moved to $($DestinationSharepointSite)"
+Send-HTMLEmail -To "$($ScriptEmail); $($Requestinguser)" -Subject "$($departinguser)'s One Drive Files have been moved to $($DestinationSharepointSite)" -Inputobject "The files have been moved to https://$($InitialDomain.Name.Split(".")[0]).sharepoint.com/shared Documents/$($departingOwner.Title)'s Files"
